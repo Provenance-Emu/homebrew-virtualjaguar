@@ -1,0 +1,76 @@
+name: Sync stable cask
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-stable-cask
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'Provenance-Emu/homebrew-virtualjaguar' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Verify stable release and prepare cask
+        run: python3 scripts/sync-stable-cask.py
+      - name: Open update pull request
+        env:
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          cask=Casks/virtualjaguar.rb
+          if git diff --quiet -- "$cask"; then
+            exit 0
+          fi
+
+          version=$(sed -n 's/^  version "\([0-9.]*\)"$/\1/p' "$cask")
+          checksum=$(sed -n 's/^  sha256 "\([0-9a-f]*\)"$/\1/p' "$cask")
+          branch="automation/stable-cask-v$version"
+          existing=$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls" \
+            -f state=all -f "head=$GITHUB_REPOSITORY_OWNER:$branch" \
+            --jq '.[0].html_url // empty')
+          if [[ -n "$existing" ]]; then
+            echo "A pull request already exists for this release: $existing"
+            exit 0
+          fi
+
+          # Recover if an earlier run pushed the branch but could not open the PR.
+          # Never replace an existing branch or discard a reviewer's edits.
+          remote=$(git ls-remote --heads origin "refs/heads/$branch")
+          if [[ -n "$remote" ]]; then
+            git fetch --no-tags origin "refs/heads/$branch"
+            git diff --exit-code FETCH_HEAD --
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -- "$cask"
+            git commit -m "chore(cask): update Virtual Jaguar to $version"
+            git push origin "HEAD:refs/heads/$branch"
+          fi
+
+          body=$(mktemp)
+          cat > "$body" <<EOF
+          Update the stable cask to [Virtual Jaguar v$version](https://github.com/libretro/virtualjaguar-libretro/releases/tag/v$version).
+
+          Downloaded the universal macOS ZIP and verified its SHA-256 against the published SHA256SUMS.txt: \`$checksum\`.
+          Validated the app's stapled notarization ticket and confirmed the executable contains arm64 and x86_64 slices.
+
+          Refs https://github.com/libretro/virtualjaguar-libretro/issues/1207
+          EOF
+          gh pr create --repo "$GITHUB_REPOSITORY" --base "$BASE_BRANCH" --head "$branch" \
+            --title "Update Virtual Jaguar cask to $version" --body-file "$body"
