@@ -2,8 +2,7 @@ cask "virtualjaguar" do
   version "3.12.0"
   sha256 "6bd9c6fa3264d6c60e524026dff4311eac4db996e6585a0a948ba886ef3a19dc"
 
-  url "https://github.com/libretro/virtualjaguar-libretro/releases/download/v#{version}/VirtualJaguar-#{version}-macos-universal.zip",
-      verified: "github.com/libretro/virtualjaguar-libretro/"
+  url "https://github.com/libretro/virtualjaguar-libretro/releases/download/v#{version}/VirtualJaguar-#{version}-macos-universal.zip"
   name "Virtual Jaguar"
   desc "Atari Jaguar and Jaguar CD emulator"
   homepage "https://jaguar.provenance-emu.com/"
@@ -13,7 +12,7 @@ cask "virtualjaguar" do
     strategy :github_latest
   end
 
-  depends_on macos: ">= :big_sur"
+  depends_on macos: :big_sur
 
   app "Virtual Jaguar.app"
 
