@@ -3,6 +3,8 @@
 Install the standalone Mac app:
 
 ```sh
+brew tap Provenance-Emu/virtualjaguar
+brew trust --cask Provenance-Emu/virtualjaguar/virtualjaguar
 brew install --cask Provenance-Emu/virtualjaguar/virtualjaguar
 ```
 
