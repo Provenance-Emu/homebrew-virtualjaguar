@@ -1,6 +1,6 @@
 cask "virtualjaguar" do
-  version "3.12.0"
-  sha256 "6bd9c6fa3264d6c60e524026dff4311eac4db996e6585a0a948ba886ef3a19dc"
+  version "3.13.1"
+  sha256 "ea91fe2418722a4290dd0feb305d99da9b4c5eb87a8765f47b73adfb16124fa2"
 
   url "https://github.com/libretro/virtualjaguar-libretro/releases/download/v#{version}/VirtualJaguar-#{version}-macos-universal.zip"
   name "Virtual Jaguar"
